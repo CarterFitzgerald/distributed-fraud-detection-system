@@ -6,26 +6,19 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
-builder.Services.AddSingleton<ITransactionStore, InMemoryTransactionStore>();
 builder.Services.AddEndpointsApiExplorer();
-object value = builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen();
 
-//
-// Database configuration
-//
+// Database configuration: EF Core + SQL Server
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    // Use SQL Server provider with the DefaultConnection string from configuration.
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
     options.UseSqlServer(connectionString);
 });
 
-//
-// Application services
-//
-// IMPORTANT: we're going to swap the implementation from in-memory to EF-backed
-// in the next step, but the controller will still depend only on ITransactionStore.
-builder.Services.AddScoped<ITransactionStore, EfTransactionStore>();
+// Application services and repositories
+builder.Services.AddScoped<ITransactionRepository, EfTransactionRepository>();
+builder.Services.AddScoped<ITransactionService, TransactionAppService>();
 
 var app = builder.Build();
 

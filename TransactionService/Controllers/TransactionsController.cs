@@ -5,73 +5,49 @@ using TransactionService.Services;
 namespace TransactionService.Controllers
 {
     /// <summary>
-    /// API controller responsible for handling transaction-related requests.
+    /// API controller responsible for handling transaction-related HTTP requests.
+    /// Delegates business logic to <see cref="ITransactionService"/>.
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     public class TransactionsController : ControllerBase
     {
-        private readonly ITransactionStore _store;
+        private readonly ITransactionService _transactionService;
 
         /// <summary>
-        /// Constructor with dependency injection.
+        /// Constructor with dependency injection of the transaction service.
         /// </summary>
-        public TransactionsController(ITransactionStore store)
+        public TransactionsController(ITransactionService transactionService)
         {
-            _store = store;
+            _transactionService = transactionService;
         }
 
         /// <summary>
         /// Creates a new transaction.
-        /// Returns 201 Created with a link to retrieve the transaction.
+        /// Returns 201 Created with a Location header pointing to the resource.
         /// </summary>
         [HttpPost]
-        public ActionResult<TransactionResponse> Create([FromBody] CreateTransactionRequest request)
+        public async Task<ActionResult<TransactionResponse>> Create([FromBody] CreateTransactionRequest request)
         {
-            var tx = new Transaction
-            {
-                Amount = request.Amount,
-                Currency = request.Currency.ToUpperInvariant(),
-                MerchantId = request.MerchantId,
-                CustomerId = request.CustomerId,
-                PaymentMethodToken = request.PaymentMethodToken,
-                DeviceId = request.DeviceId,
-                Country = request.Country.ToUpperInvariant(),
-                Timestamp = request.Timestamp ?? DateTimeOffset.UtcNow
-            };
+            // Model validation is handled automatically by [ApiController] + data annotations.
+            var created = await _transactionService.CreateAsync(request);
 
-            _store.Add(tx);
-
-            return CreatedAtAction(nameof(GetById), new { id = tx.Id }, ToResponse(tx));
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
         /// <summary>
         /// Retrieves a transaction by its unique identifier.
         /// </summary>
         [HttpGet("{id:guid}")]
-        public ActionResult<TransactionResponse> GetById(Guid id)
+        public async Task<ActionResult<TransactionResponse>> GetById(Guid id)
         {
-            var tx = _store.Get(id);
-            if (tx is null) return NotFound();
+            var result = await _transactionService.GetByIdAsync(id);
+            if (result is null)
+            {
+                return NotFound();
+            }
 
-            return Ok(ToResponse(tx));
+            return Ok(result);
         }
-
-        /// <summary>
-        /// Maps domain entity to response DTO.
-        /// Keeps controller logic clean and consistent.
-        /// </summary>
-        private static TransactionResponse ToResponse(Transaction tx) => new()
-        {
-            Id = tx.Id,
-            Amount = tx.Amount,
-            Currency = tx.Currency,
-            MerchantId = tx.MerchantId,
-            CustomerId = tx.CustomerId,
-            PaymentMethodToken = tx.PaymentMethodToken,
-            DeviceId = tx.DeviceId,
-            Country = tx.Country,
-            Timestamp = tx.Timestamp
-        };
     }
 }
