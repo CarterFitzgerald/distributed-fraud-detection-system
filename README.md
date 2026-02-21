@@ -1,6 +1,6 @@
 # Distributed Fraud Detection System
 
-![Build](https://github.com/CarterFitzgerald/distributed-fraud-detection-system/actions/workflows/dotnet.yml/badge.svg)
+![Build](https://github.com/CarterFitzgerald/distributed-fraud-detection-system/actions/workflows/ci.yml/badge.svg)
 
 A production-style distributed fraud detection system built with ASP.NET Core and C#, following an event-driven microservices-inspired architecture.
 
