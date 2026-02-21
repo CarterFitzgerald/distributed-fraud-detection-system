@@ -25,9 +25,15 @@ This project simulates a real-world financial transaction system where:
 
 ## Current Status
 
-- Initial project setup complete
-- CI pipeline configured
-- Transaction service scaffolded
+- Project structure initialized with controller-based architecture
+- GitHub Actions CI pipeline configured (build + test validation)
+- Transaction domain model implemented
+- Request/response DTOs with validation attributes added
+- Thread-safe in-memory transaction store implemented
+- RESTful endpoints available:
+  - POST /api/transactions
+  - GET /api/transactions/{id}
+- Swagger documentation enabled for local development
 
 ## Development Roadmap
 
