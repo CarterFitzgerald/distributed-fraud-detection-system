@@ -1,5 +1,7 @@
 # Distributed Fraud Detection System
 
+![Build](https://github.com/CarterFitzgerald/distributed-fraud-detection-system/actions/workflows/dotnet.yml/badge.svg)
+
 A production-style distributed fraud detection system built with ASP.NET Core and C#, following an event-driven microservices-inspired architecture.
 
 This repository currently focuses on the **TransactionService**, which exposes a REST API for ingesting and retrieving financial transactions and persists them to a SQL Server database using Entity Framework Core.
@@ -34,6 +36,10 @@ Right now, the project is in the **data ingestion and persistence** phase.
   - GitHub Actions CI (build + test)
 - **API Documentation**:
   - Swagger / OpenAPI (development environment)
+- **Testing**:
+  - xUnit test project (`TransactionService.Tests`)
+  - Moq for mocking dependencies (`ITransactionRepository`)
+  - Focused unit tests for `TransactionAppService` business logic
 
 ---
 
@@ -67,6 +73,13 @@ Right now, the project is in the **data ingestion and persistence** phase.
 - **Database**
   - SQL Server database (e.g. `TransactionDb`) created and managed via EF Core migrations
 
+- **Testing Layer**
+  - `TransactionService.Tests` – xUnit test project
+  - Unit tests for `TransactionAppService` covering:
+    - Creation flow (normalization, timestamp defaulting, repository calls)
+    - Retrieval by id (found / not found behavior)
+  - Repository is mocked via `Moq` to keep tests fast and focused on business logic
+
 ---
 
 ## Current Status
@@ -85,7 +98,9 @@ Right now, the project is in the **data ingestion and persistence** phase.
   - `POST /api/transactions`
   - `GET /api/transactions/{id}`
 - ✅ Transactions are persisted to SQL Server via the repository layer  
-- ✅ Swagger documentation enabled for local development
+- ✅ Swagger documentation enabled for local development  
+- ✅ xUnit test project added (`TransactionService.Tests`)  
+- ✅ Unit tests for transaction service logic integrated into CI (build + test pass)
 
 ---
 
@@ -94,6 +109,7 @@ Right now, the project is in the **data ingestion and persistence** phase.
 - [x] Implement Transaction domain model  
 - [x] Add EF Core and SQL Server persistence  
 - [x] Introduce service and repository layers for clean separation of concerns  
+- [x] Add unit tests for transaction business logic and wire them into CI  
 - [ ] Introduce messaging with RabbitMQ for event-driven processing  
 - [ ] Add dedicated Fraud Detection worker service  
 - [ ] Integrate ML.NET fraud model (using a real fraud dataset, e.g. Kaggle)  
@@ -105,6 +121,6 @@ Right now, the project is in the **data ingestion and persistence** phase.
 ## Running the TransactionService Locally
 
 1. **Prerequisites**
-   - .NET 9 SDK
-   - SQL Server (local instance or Docker)
-   - Visual Studio or `dotnet` CLI
+   - .NET 9 SDK  
+   - SQL Server (local instance or Docker)  
+   - Visual Studio or `dotnet` CLI  
