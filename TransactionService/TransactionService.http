@@ -1,4 +1,15 @@
-@TransactionService_HostAddress = http://localhost:5134
+@TransactionService_HostAddress = https://localhost:7016
 
-GET {{TransactionService_HostAddress}}/api/health
+POST {{TransactionService_HostAddress}}/api/transactions
+Content-Type: application/json
 Accept: application/json
+
+{
+  "amount": 125.50,
+  "currency": "AUD",
+  "merchantId": "merchant_123",
+  "customerId": "customer_456",
+  "paymentMethodToken": "pm_tok_abc123",
+  "deviceId": "device_xyz",
+  "country": "AU"
+}

@@ -1,6 +1,9 @@
+using TransactionService.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddSingleton<ITransactionStore, InMemoryTransactionStore>();
 builder.Services.AddEndpointsApiExplorer();
 object value = builder.Services.AddSwaggerGen();
 
