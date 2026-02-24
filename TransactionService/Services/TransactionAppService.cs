@@ -1,4 +1,5 @@
 ﻿using TransactionService.Models;
+using TransactionService.Messaging;
 
 namespace TransactionService.Services
 {
@@ -10,13 +11,14 @@ namespace TransactionService.Services
     public class TransactionAppService : ITransactionService
     {
         private readonly ITransactionRepository _repository;
+        private readonly ITransactionEventPublisher _eventPublisher;
 
-        /// <summary>
-        /// Constructor with dependency injection of the transaction repository.
-        /// </summary>
-        public TransactionAppService(ITransactionRepository repository)
+        public TransactionAppService(
+            ITransactionRepository repository,
+            ITransactionEventPublisher eventPublisher)
         {
             _repository = repository;
+            _eventPublisher = eventPublisher;
         }
 
         /// <inheritdoc />
@@ -35,8 +37,10 @@ namespace TransactionService.Services
                 Timestamp = request.Timestamp ?? DateTimeOffset.UtcNow
             };
 
-            // Persist using the repository.
             var saved = await _repository.AddAsync(tx);
+
+            // Publish event after successful save.
+            await _eventPublisher.PublishTransactionCreatedAsync(saved);
 
             // Map domain entity to response DTO.
             return ToResponse(saved);
