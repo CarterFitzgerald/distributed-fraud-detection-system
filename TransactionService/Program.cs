@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using TransactionService.Data;
 using TransactionService.Services;
+using TransactionService.Messaging;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,12 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Application services and repositories
 builder.Services.AddScoped<ITransactionRepository, EfTransactionRepository>();
 builder.Services.AddScoped<ITransactionService, TransactionAppService>();
+
+// Bind RabbitMQ options from configuration.
+builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection("RabbitMq"));
+
+// Messaging
+builder.Services.AddSingleton<ITransactionEventPublisher, RabbitMqTransactionEventPublisher>();
 
 var app = builder.Build();
 
