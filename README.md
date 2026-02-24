@@ -1,25 +1,21 @@
 # Distributed Fraud Detection System
 
-![Build](https://github.com/CarterFitzgerald/distributed-fraud-detection-system/actions/workflows/ci.yml/badge.svg)
-
 A production-style distributed fraud detection system built with ASP.NET Core and C#, following an event-driven microservices-inspired architecture.
 
-This repository currently focuses on the **TransactionService**, which exposes a REST API for ingesting and retrieving financial transactions and persists them to a SQL Server database using Entity Framework Core.
+This repository currently focuses on the **TransactionService**, which exposes a REST API for ingesting financial transactions, persists them to SQL Server using Entity Framework Core, and publishes domain events to RabbitMQ.
 
 ---
 
 ## Overview
 
-The system (in its full vision) will simulate a real-world financial transaction pipeline where:
+The system (in its full vision) simulates a real-world financial transaction pipeline where:
 
 - Transactions are received via a REST API  
-- Events are published to a message broker  
-- A background worker processes transactions for fraud  
-- An ML model scores each transaction for fraud risk  
-- Results are stored for audit and reporting  
-- The whole thing is containerised and deployable to the cloud (Azure/AWS)
-
-Right now, the project is in the **data ingestion and persistence** phase.
+- Transactions are persisted to a relational database  
+- A `TransactionCreated` domain event is published to a message broker  
+- Downstream services (fraud detection, analytics, auditing) can consume events asynchronously  
+- Services are containerized and deployable to the cloud  
+- the system now supports **event-driven architecture via RabbitMQ**.
 
 ---
 
@@ -28,99 +24,121 @@ Right now, the project is in the **data ingestion and persistence** phase.
 - **Language**: C# (.NET 9)
 - **Framework**: ASP.NET Core Web API
 - **Persistence**: Entity Framework Core + SQL Server (`TransactionDb`)
+- **Messaging**: RabbitMQ (via Docker)
 - **Architecture**:
   - Controller-based Web API
-  - Dependency Injection for services and repositories
-  - Layered design (Controllers → Services → Repositories → Persistence)
+  - Dependency Injection
+  - Layered architecture (Controllers → Services → Repositories → Persistence)
+  - Event publishing abstraction
 - **DevOps**:
-  - GitHub Actions CI (build + test)
+  - GitHub Actions CI (build + test validation)
+  - Docker (API + RabbitMQ)
 - **API Documentation**:
-  - Swagger / OpenAPI (development environment)
-- **Testing**:
-  - xUnit test project (`TransactionService.Tests`)
-  - Moq for mocking dependencies (`ITransactionRepository`)
-  - Focused unit tests for `TransactionAppService` business logic
+  - Swagger / OpenAPI (Development environment)
 
 ---
 
 ## Architecture (Current Phase)
 
-**TransactionService** currently consists of:
+### TransactionService
 
-- **API Layer**
-  - `HealthController` – basic health check
-  - `TransactionsController` – handles transaction creation and retrieval, delegating business logic to a service layer
+#### API Layer
+- `HealthController` – basic health check endpoint
+- `TransactionsController` – handles transaction creation and retrieval
 
-- **Domain Layer**
-  - `Transaction` – core domain entity representing a financial transaction
-  - `CreateTransactionRequest` – request DTO with validation attributes
-  - `TransactionResponse` – response DTO returned from the API
+#### Domain Layer
+- `Transaction` – core domain entity
+- `CreateTransactionRequest` – validated request DTO
+- `TransactionResponse` – API response DTO
+- `TransactionCreatedEvent` – domain event published after persistence
 
-- **Application / Service Layer**
-  - `ITransactionService` – abstraction for transaction-related business logic
-  - `TransactionAppService` – implementation that:
-    - Maps request DTOs to domain entities
-    - Applies basic normalization (e.g. uppercasing currency/country, default timestamps)
-    - Coordinates with the repository layer
-    - Maps domain entities back to response DTOs
+#### Application / Service Layer
+- `ITransactionService`
+- `TransactionAppService`
+  - Normalizes input (currency/country uppercase)
+  - Applies default timestamps
+  - Coordinates repository
+  - Publishes `TransactionCreated` event after successful persistence
 
-- **Persistence Layer**
-  - `AppDbContext` – EF Core database context exposing `DbSet<Transaction>`
-  - `ITransactionRepository` – abstraction for transaction persistence
-  - `EfTransactionRepository` – SQL Server–backed implementation of `ITransactionRepository`
-  - (Previously: `InMemoryTransactionStore` used during early development before EF Core integration)
+#### Persistence Layer
+- `AppDbContext`
+- `ITransactionRepository`
+- `EfTransactionRepository`
 
-- **Database**
-  - SQL Server database (e.g. `TransactionDb`) created and managed via EF Core migrations
-
-- **Testing Layer**
-  - `TransactionService.Tests` – xUnit test project
-  - Unit tests for `TransactionAppService` covering:
-    - Creation flow (normalization, timestamp defaulting, repository calls)
-    - Retrieval by id (found / not found behavior)
-  - Repository is mocked via `Moq` to keep tests fast and focused on business logic
+#### Messaging Layer
+- `ITransactionEventPublisher`
+- `RabbitMqTransactionEventPublisher`
+  - Publishes JSON-serialized events to `transactions.created` queue
 
 ---
 
-## Current Status
+## Event Flow
+POST /api/transactions
 
-- ✅ Project structure initialized with controller-based architecture  
-- ✅ GitHub Actions CI pipeline configured (build + test validation)  
-- ✅ Transaction domain model implemented  
-- ✅ Request/response DTOs with validation attributes added  
-- ✅ Entity Framework Core integrated with SQL Server for real persistence  
-- ✅ `AppDbContext` and EF Core migrations set up  
-- ✅ Service and repository layers introduced:
-  - `ITransactionService` / `TransactionAppService`
-  - `ITransactionRepository` / `EfTransactionRepository`
-- ✅ Controllers refactored to be thin and delegate business logic to the service layer  
-- ✅ RESTful transaction endpoints available:
-  - `POST /api/transactions`
-  - `GET /api/transactions/{id}`
-- ✅ Transactions are persisted to SQL Server via the repository layer  
-- ✅ Swagger documentation enabled for local development  
-- ✅ xUnit test project added (`TransactionService.Tests`)  
-- ✅ Unit tests for transaction service logic integrated into CI (build + test pass)
+↓
+
+TransactionAppService
+
+↓
+
+Save to SQL Server
+
+↓
+
+Publish TransactionCreated event
+
+↓
+
+RabbitMQ Queue: transactions.created
+
+Messages are durable and serialized as JSON.
 
 ---
+
+## Current Status 
+
+- ✅ Clean layered architecture implemented  
+- ✅ Entity Framework Core with SQL Server persistence  
+- ✅ Repository + Service pattern introduced  
+- ✅ Unit tests for service logic  
+- ✅ GitHub Actions CI configured (build + test)  
+- ✅ Dockerized TransactionService  
+- ✅ RabbitMQ integrated via Docker Compose  
+- ✅ `TransactionCreated` event published after persistence  
+- ✅ End-to-end event flow verified in RabbitMQ UI  
+
+---
+
+## Running Locally
+
+### 1️⃣ Start RabbitMQ
+
+```bash
+docker compose up -d rabbitmq
+```
+## RabbitMQ UI
+
+http://localhost:15672  
+**Username:** guest  
+**Password:** guest  
+
+---
+
+## 2️⃣ Run TransactionService (Development)
+
+```bash
+cd TransactionService
+set ASPNETCORE_ENVIRONMENT=Development
+dotnet run
+```
 
 ## Development Roadmap
 
-- [x] Implement Transaction domain model  
-- [x] Add EF Core and SQL Server persistence  
-- [x] Introduce service and repository layers for clean separation of concerns  
-- [x] Add unit tests for transaction business logic and wire them into CI  
-- [ ] Introduce messaging with RabbitMQ for event-driven processing  
-- [ ] Add dedicated Fraud Detection worker service  
-- [ ] Integrate ML.NET fraud model (using a real fraud dataset, e.g. Kaggle)  
-- [ ] Dockerize services (API, DB, worker, broker)  
-- [ ] Deploy to Azure or AWS (App Service / Containers + managed SQL)
-
----
-
-## Running the TransactionService Locally
-
-1. **Prerequisites**
-   - .NET 9 SDK  
-   - SQL Server (local instance or Docker)  
-   - Visual Studio or `dotnet` CLI  
+- [x] Implement Transaction domain model
+- [x] Add EF Core and SQL Server persistence
+- [x] Introduce service and repository layers
+- [x] Add RabbitMQ event publishing
+- [ ] Add Fraud Detection worker (consumer service)
+- [ ] Integrate ML.NET fraud model
+- [ ] Dockerize full multi-service environment
+- [ ] Deploy to Azure or AWS
