@@ -3,6 +3,7 @@
     <File Path=".dockerignore" />
     <File Path="docker-compose.yml" />
   </Folder>
+  <Project Path="FraudDetectionWorker/FraudDetectionWorker.csproj" />
   <Project Path="TransactionService.Tests/TransactionService.Tests.csproj" />
   <Project Path="TransactionService/TransactionService.csproj" />
 </Solution>
