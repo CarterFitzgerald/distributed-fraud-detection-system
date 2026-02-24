@@ -1,6 +1,8 @@
 ﻿using Moq;
 using TransactionService.Models;
 using TransactionService.Services;
+using TransactionService.Messaging;
+using Xunit;
 
 namespace TransactionService.Tests
 {
@@ -17,6 +19,7 @@ namespace TransactionService.Tests
         {
             // Arrange
             var repoMock = new Mock<ITransactionRepository>();
+            var eventPublisherMock = new Mock<ITransactionEventPublisher>();
 
             var request = new CreateTransactionRequest
             {
@@ -42,7 +45,7 @@ namespace TransactionService.Tests
                     return t;
                 });
 
-            var service = new TransactionAppService(repoMock.Object);
+            var service = new TransactionAppService(repoMock.Object, eventPublisherMock.Object);
 
             // Act
             var response = await service.CreateAsync(request);
@@ -60,6 +63,11 @@ namespace TransactionService.Tests
 
             // Ensure we actually called the repository
             repoMock.Verify(r => r.AddAsync(It.IsAny<Transaction>()), Times.Once);
+
+            // Ensure we published an event
+            eventPublisherMock.Verify(
+                p => p.PublishTransactionCreatedAsync(It.IsAny<Transaction>()),
+                Times.Once);
 
             // And the transaction passed to the repo was also normalized
             Assert.NotNull(capturedTransaction);
@@ -80,7 +88,8 @@ namespace TransactionService.Tests
                 .Setup(r => r.GetByIdAsync(It.IsAny<Guid>()))
                 .ReturnsAsync((Transaction?)null);
 
-            var service = new TransactionAppService(repoMock.Object);
+            var eventPublisherMock = new Mock<ITransactionEventPublisher>();
+            var service = new TransactionAppService(repoMock.Object, eventPublisherMock.Object);
             var id = Guid.NewGuid();
 
             // Act
@@ -118,7 +127,8 @@ namespace TransactionService.Tests
                 .Setup(r => r.GetByIdAsync(txId))
                 .ReturnsAsync(stored);
 
-            var service = new TransactionAppService(repoMock.Object);
+            var eventPublisherMock = new Mock<ITransactionEventPublisher>();
+            var service = new TransactionAppService(repoMock.Object, eventPublisherMock.Object);
 
             // Act
             var result = await service.GetByIdAsync(txId);
