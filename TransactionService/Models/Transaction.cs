@@ -53,5 +53,21 @@
         /// Defaults to UTC.
         /// </summary>
         public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.UtcNow;
+
+        /// <summary>
+        /// Fraud score from 0-100. Higher means more suspicious.
+        /// </summary>
+        public int? FraudScore { get; set; }
+
+        /// <summary>
+        /// Human-readable reason codes for why the score was assigned (demo / rule-based).
+        /// Example: "HIGH_AMOUNT;OFF_HOURS".
+        /// </summary>
+        public string? FraudReason { get; set; }
+
+        /// <summary>
+        /// Timestamp when the fraud score was computed by the worker.
+        /// </summary>
+        public DateTimeOffset? FraudScoredAt { get; set; }
     }
 }
