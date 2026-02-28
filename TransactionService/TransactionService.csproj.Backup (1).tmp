@@ -22,10 +22,7 @@
 
   <ItemGroup>
     <Folder Include="Data\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\DistributedFraud.Contracts\DistributedFraud.Contracts.csproj" />
+    <Folder Include="Events\" />
   </ItemGroup>
 
 </Project>

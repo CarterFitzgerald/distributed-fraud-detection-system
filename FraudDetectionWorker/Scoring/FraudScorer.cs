@@ -1,4 +1,4 @@
-﻿using TransactionService.Events;
+﻿using DistributedFraud.Contracts.Events;
 
 namespace FraudDetectionWorker.Scoring
 {
