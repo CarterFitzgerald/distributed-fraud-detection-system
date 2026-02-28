@@ -16,5 +16,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TransactionService\TransactionService.csproj" />
+    <ProjectReference Include="..\DistributedFraud.Contracts\DistributedFraud.Contracts.csproj" />
   </ItemGroup>
 </Project>

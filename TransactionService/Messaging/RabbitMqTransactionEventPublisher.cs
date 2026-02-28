@@ -2,7 +2,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
-using TransactionService.Events;
+using DistributedFraud.Contracts.Events;
 using TransactionService.Models;
 
 namespace TransactionService.Messaging
