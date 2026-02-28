@@ -5,6 +5,7 @@
   </Folder>
   <Project Path="DistributedFraud.Contracts/DistributedFraud.Contracts.csproj" />
   <Project Path="FraudDetectionWorker/FraudDetectionWorker.csproj" />
+  <Project Path="FraudModelTrainer/FraudModelTrainer.csproj" />
   <Project Path="TransactionService.Tests/TransactionService.Tests.csproj" />
   <Project Path="TransactionService/TransactionService.csproj" />
 </Solution>
