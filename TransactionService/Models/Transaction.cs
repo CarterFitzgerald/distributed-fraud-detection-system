@@ -69,5 +69,18 @@
         /// Timestamp when the fraud score was computed by the worker.
         /// </summary>
         public DateTimeOffset? FraudScoredAt { get; set; }
+
+        /// <summary>
+        /// Fraud Probability from 0.0 to 1.0. Higher means more likely to be fraudulent.
+        /// </summary>
+        public float? FraudProbability { get; set; }
+        /// <summary>
+        /// Predicted label from the fraud model given as True (fraud) or False (not fraud).
+        /// </summary>
+        public bool? FraudPrediction { get; set; }
+        /// <summary>
+        /// Version of the fraud model used to compute the score and prediction.
+        /// </summary>s
+        public string? FraudModelVersion { get; set; }
     }
 }
