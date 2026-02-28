@@ -1,11 +1,14 @@
 # Distributed Fraud Detection System
 
+![CI Status](https://github.com/CarterFitzgerald/distributed-fraud-detection-system/actions/workflows/ci.yml/badge.svg)
+
 A production-style distributed fraud detection system built with ASP.NET Core and C#, following an event-driven microservices-inspired architecture.
 
 This repository contains a distributed system composed of:
 
-- **TransactionService** – REST API for ingesting and persisting transactions
-- **FraudDetectionWorker** – Background service that consumes transaction events and performs fraud scoring
+- **TransactionService** – REST API for ingesting and persisting transactions  
+- **FraudDetectionWorker** – Background service that consumes transaction events and performs fraud scoring  
+- **DistributedFraud.Contracts** – Shared contract library containing cross-service event definitions  
 
 ---
 
@@ -20,7 +23,7 @@ The system simulates a real-world financial transaction pipeline where:
 - A fraud score is computed and stored back in the database  
 - Services are containerized and deployable to the cloud  
 
-The system now supports a complete **end-to-end event-driven architecture**.
+The system implements a complete **end-to-end event-driven architecture** with clean separation of concerns between services.
 
 ---
 
@@ -33,10 +36,10 @@ The system now supports a complete **end-to-end event-driven architecture**.
 - **Persistence**: Entity Framework Core + SQL Server (`TransactionDb`)
 - **Messaging**: RabbitMQ (via Docker)
 - **Architecture**:
-  - Controller-based Web API
-  - Dependency Injection
   - Layered architecture (Controllers → Services → Repositories → Persistence)
-  - Event publishing abstraction
+  - Dependency Injection throughout
+  - Shared contracts project for cross-service event consistency
+  - Dedicated messaging abstraction
   - Background consumer service
   - Rule-based fraud scoring engine (replaceable with ML.NET)
 - **DevOps**:
@@ -47,19 +50,42 @@ The system now supports a complete **end-to-end event-driven architecture**.
 
 ---
 
-## Architecture (Current Phase)
+## Solution Structure
+
+/DistributedFraud.Contracts
+/Events
+TransactionCreatedEvent.cs
+
+/TransactionService
+/Controllers
+/Services
+/Models
+/Data
+/Messaging
+/Migrations
+
+/FraudDetectionWorker
+/Application
+/Messaging
+/Data
+/Scoring
+
+The `DistributedFraud.Contracts` project ensures publisher and consumer remain consistent by sharing event definitions.
+
+---
+
+## Architecture
 
 ### TransactionService
 
 #### API Layer
-- `HealthController` – basic health check endpoint
-- `TransactionsController` – handles transaction creation and retrieval
+- `HealthController` – basic health check endpoint  
+- `TransactionsController` – handles transaction creation and retrieval  
 
 #### Domain Layer
-- `Transaction` – core domain entity
-- `CreateTransactionRequest` – validated request DTO
-- `TransactionResponse` – API response DTO
-- `TransactionCreatedEvent` – domain event published after persistence
+- `Transaction` – core domain entity  
+- `CreateTransactionRequest` – validated request DTO  
+- `TransactionResponse` – API response DTO  
 
 #### Application / Service Layer
 - `ITransactionService`
@@ -67,7 +93,7 @@ The system now supports a complete **end-to-end event-driven architecture**.
   - Normalizes input (currency/country uppercase)
   - Applies default timestamps
   - Coordinates repository
-  - Publishes `TransactionCreated` event after successful persistence
+  - Publishes `TransactionCreated` event after successful persistence  
 
 #### Persistence Layer
 - `AppDbContext`
@@ -77,21 +103,29 @@ The system now supports a complete **end-to-end event-driven architecture**.
 #### Messaging Layer (Publisher)
 - `ITransactionEventPublisher`
 - `RabbitMqTransactionEventPublisher`
-  - Publishes JSON-serialized events to `transactions.created` queue
 
 ---
 
 ### FraudDetectionWorker
 
-A background worker service that:
+A background worker service responsible for:
 
-- Connects to RabbitMQ
-- Subscribes to `transactions.created`
-- Deserializes `TransactionCreated` events
-- Computes a fraud score using a rule-based engine
-- Updates the corresponding transaction row in SQL Server
-- Manually ACKs/NACKs messages
-- Ensures idempotency (skips already-scored transactions)
+- Connecting to RabbitMQ
+- Subscribing to the `transactions.created` queue
+- Delegating message handling to an application handler
+- Computing fraud scores
+- Updating the corresponding transaction row in SQL Server
+- Acknowledging or rejecting messages appropriately
+- Ensuring idempotency (skips already-scored transactions)
+
+#### Internal Structure
+
+- `IMessageConsumer` – abstraction over message consumption
+- `RabbitMqMessageConsumer` – RabbitMQ implementation
+- `TransactionCreatedHandler` – application-level event handler
+- `FraudScorer` – rule-based scoring engine
+
+The worker is intentionally structured so messaging, business logic, and persistence are cleanly separated.
 
 ---
 
@@ -117,6 +151,10 @@ RabbitMQ Queue: transactions.created
 ↓
 
 FraudDetectionWorker consumes event
+
+↓
+
+TransactionCreatedHandler
 
 ↓
 
@@ -153,17 +191,15 @@ The scoring engine is intentionally designed to be easily replaceable with an ML
 ## Current Status 
 
 - ✅ Clean layered architecture implemented  
+- ✅ Shared contracts project introduced for cross-service events  
 - ✅ Entity Framework Core with SQL Server persistence  
-- ✅ Repository + Service pattern introduced  
-- ✅ Unit tests for service logic  
-- ✅ GitHub Actions CI configured (build + test)  
-- ✅ Dockerized TransactionService  
-- ✅ RabbitMQ integrated via Docker Compose  
-- ✅ `TransactionCreated` event published after persistence  
-- ✅ FraudDetectionWorker consumes events  
+- ✅ Repository + Service pattern implemented  
+- ✅ Messaging abstraction introduced in worker  
+- ✅ RabbitMQ integration complete  
+- ✅ End-to-end distributed flow verified  
 - ✅ Rule-based fraud scoring implemented  
 - ✅ Fraud results persisted back to SQL Server  
-- ✅ End-to-end distributed flow verified 
+- ✅ GitHub Actions CI configured (build + test)  
 
 ---
 
