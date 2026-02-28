@@ -1,0 +1,20 @@
+{
+  "ModelPath": "Model/model.zip",
+  "CreatedUtc": "2026-02-28T10:03:17.7111098+00:00",
+  "Trainer": "SdcaLogisticRegression",
+  "Features": [
+    "Country (OneHot)",
+    "Currency (OneHot)",
+    "MerchantId (HashedWordBags, 2^14)",
+    "CustomerId (HashedWordBags, 2^16)",
+    "Amount (Normalized)",
+    "HourOfDay (Normalized)"
+  ],
+  "Metrics": {
+    "Accuracy": 0.9980554205153136,
+    "AreaUnderRocCurve": 0.9745494398441306,
+    "F1Score": 0,
+    "PositivePrecision": 0,
+    "PositiveRecall": 0
+  }
+}
