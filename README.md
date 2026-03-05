@@ -1,117 +1,140 @@
 # Distributed Fraud Detection System
 
-A production-style distributed fraud detection system built with ASP.NET Core and C#, following an event-driven microservices-inspired architecture.
+![CI Status](https://github.com/CarterFitzgerald/distributed-fraud-detection-system/actions/workflows/ci.yml/badge.svg)
 
-This repository currently focuses on the **TransactionService**, which exposes a REST API for ingesting financial transactions, persists them to SQL Server using Entity Framework Core, and publishes domain events to RabbitMQ.
+A production-style, event-driven fraud detection system built with **ASP.NET Core**, **RabbitMQ**, **SQL Server**, and **ML.NET**. The project is designed as a portfolio-grade example of a real-world transaction pipeline: ingest → persist → publish → consume → enrich → score → persist results.
 
 ---
 
-## Overview
+## What This Project Does
 
-The system (in its full vision) simulates a real-world financial transaction pipeline where:
+This system simulates how financial transactions flow through a distributed architecture:
 
-- Transactions are received via a REST API  
-- Transactions are persisted to a relational database  
-- A `TransactionCreated` domain event is published to a message broker  
-- Downstream services (fraud detection, analytics, auditing) can consume events asynchronously  
-- Services are containerized and deployable to the cloud  
-- the system now supports **event-driven architecture via RabbitMQ**.
+1. **TransactionService** exposes a REST API to create transactions.
+2. Transactions are **persisted to SQL Server** via Entity Framework Core.
+3. A **TransactionCreated** event is published to **RabbitMQ**.
+4. **FraudDetectionWorker** consumes events asynchronously, computes engineered features, runs an **ML.NET model**, and writes fraud outputs back to the database.
+
+The result is a full end-to-end loop where each transaction is enriched and scored with a real model output:
+
+- **FraudProbability** (0.0–1.0)
+- **FraudPrediction** (true/false)
+- **FraudScore** (human-friendly scaled score)
+- **FraudReason** (interpretable reason codes)
+- **FraudModelVersion** and **FraudScoredAt** (traceability)
 
 ---
 
 ## Tech Stack
 
-- **Language**: C# (.NET 9)
-- **Framework**: ASP.NET Core Web API
-- **Persistence**: Entity Framework Core + SQL Server (`TransactionDb`)
-- **Messaging**: RabbitMQ (via Docker)
+- **Language**: C# (.NET)
+- **API**: ASP.NET Core Web API
+- **Database**: SQL Server + Entity Framework Core
+- **Messaging**: RabbitMQ (Docker)
+- **Fraud Scoring**: ML.NET (Binary Classification, LightGBM)
 - **Architecture**:
-  - Controller-based Web API
-  - Dependency Injection
-  - Layered architecture (Controllers → Services → Repositories → Persistence)
-  - Event publishing abstraction
-- **DevOps**:
-  - GitHub Actions CI (build + test validation)
-  - Docker (API + RabbitMQ)
-- **API Documentation**:
-  - Swagger / OpenAPI (Development environment)
+  - Layered API (Controllers → Services → Repositories → Persistence)
+  - Event-driven integration (Publisher/Consumer)
+  - Background worker service
+  - Options/config-driven infrastructure (connection strings, model path, broker settings)
 
 ---
 
-## Architecture (Current Phase)
+## Services
 
 ### TransactionService
+**Responsibilities**
+- Validates and accepts transaction requests
+- Persists transactions to SQL Server
+- Publishes `TransactionCreatedEvent` to RabbitMQ after successful persistence
 
-#### API Layer
-- `HealthController` – basic health check endpoint
-- `TransactionsController` – handles transaction creation and retrieval
+**Key components**
+- `TransactionsController`
+- Domain model: `Transaction`
+- DTOs: `CreateTransactionRequest`, `TransactionResponse`
+- Service layer: `TransactionAppService`
+- Repository layer: `EfTransactionRepository`
+- Event publishing: `RabbitMqTransactionEventPublisher`
 
-#### Domain Layer
-- `Transaction` – core domain entity
-- `CreateTransactionRequest` – validated request DTO
-- `TransactionResponse` – API response DTO
-- `TransactionCreatedEvent` – domain event published after persistence
+---
 
-#### Application / Service Layer
-- `ITransactionService`
-- `TransactionAppService`
-  - Normalizes input (currency/country uppercase)
-  - Applies default timestamps
-  - Coordinates repository
-  - Publishes `TransactionCreated` event after successful persistence
+### FraudDetectionWorker
+**Responsibilities**
+- Consumes `TransactionCreatedEvent` messages from RabbitMQ
+- Loads the transaction row from SQL Server (DB is source of truth)
+- Computes and persists engineered features (customer/device/token state, velocity aggregates, MCC risk, geo signals)
+- Runs an ML.NET model to produce a fraud probability and label
+- Persists scoring outputs back to the transaction row
 
-#### Persistence Layer
-- `AppDbContext`
-- `ITransactionRepository`
-- `EfTransactionRepository`
+**Key components**
+- `RabbitMqMessageConsumer` (durable queue, manual ack/nack)
+- `TransactionCreatedHandler` (orchestrates pipeline + structured logging)
+- `TransactionFeatureComputer` (feature engineering + state tables)
+- `FraudModelPredictor` (loads model once, uses thread-local prediction engine)
+- `TransactionDbContext` (transactions + state tables + risk tables)
 
-#### Messaging Layer
-- `ITransactionEventPublisher`
-- `RabbitMqTransactionEventPublisher`
-  - Publishes JSON-serialized events to `transactions.created` queue
+---
+
+## Data Model (High Level)
+
+**Transactions table**
+- Core fields: `Amount`, `Currency`, `CustomerId`, `MerchantId`, `Country`, `Timestamp`, etc.
+- Engineered features: velocity, device/token novelty, geo distance, MCC risk, etc.
+- Model outputs: `FraudProbability`, `FraudPrediction`, `FraudScore`, `FraudReason`, `FraudModelVersion`, `FraudScoredAt`
+
+**State tables used for features**
+- `CustomerProfileState` (account created at, age, home country)
+- `CustomerDeviceState` (first-seen device tracking)
+- `CustomerPaymentTokenState` (first-seen payment token tracking)
+- `MerchantCategoryRisk` (reference risk values by merchant category)
 
 ---
 
 ## Event Flow
-POST /api/transactions
 
-↓
+`POST /api/transactions`
 
-TransactionAppService
+⬇️
 
-↓
+Persist transaction to SQL Server
 
-Save to SQL Server
+⬇️
 
-↓
+Publish `TransactionCreatedEvent`
 
-Publish TransactionCreated event
+⬇️
 
-↓
+RabbitMQ queue: `transactions.created`
 
-RabbitMQ Queue: transactions.created
+⬇️
 
-Messages are durable and serialized as JSON.
+FraudDetectionWorker consumes event
+
+⬇️
+
+Feature computation + ML prediction
+
+⬇️
+
+Update transaction with fraud outputs
 
 ---
 
 ## Current Status 
 
-- ✅ Clean layered architecture implemented  
-- ✅ Entity Framework Core with SQL Server persistence  
-- ✅ Repository + Service pattern introduced  
-- ✅ Unit tests for service logic  
-- ✅ GitHub Actions CI configured (build + test)  
-- ✅ Dockerized TransactionService  
-- ✅ RabbitMQ integrated via Docker Compose  
-- ✅ `TransactionCreated` event published after persistence  
-- ✅ End-to-end event flow verified in RabbitMQ UI  
+- ✅ Transaction ingestion API with validation + persistence
+- ✅ RabbitMQ event publishing (durable messages, JSON payload)
+- ✅ FraudDetectionWorker consumer service with manual ack/nack behavior
+- ✅ Feature computation and stateful enrichment (device/token/profile tracking + velocity aggregates)
+- ✅ ML.NET model integration with real probability output
+- ✅ Predictions persisted back to SQL Server with versioning + timestamps
+- ✅ End-to-end pipeline verified (API → DB → event → worker → updated DB record)
 
 ---
 
 ## Running Locally
 
-### 1️⃣ Start RabbitMQ
+### 1 Start RabbitMQ
 
 ```bash
 docker compose up -d rabbitmq
@@ -124,11 +147,18 @@ http://localhost:15672
 
 ---
 
-## 2️⃣ Run TransactionService (Development)
+## 2 Run TransactionService (Development)
 
 ```bash
 cd TransactionService
 set ASPNETCORE_ENVIRONMENT=Development
+dotnet run
+```
+
+## 3 Run TransactionService (Development)
+
+```bash
+cd FraudDetectionWorker
 dotnet run
 ```
 
@@ -138,7 +168,7 @@ dotnet run
 - [x] Add EF Core and SQL Server persistence
 - [x] Introduce service and repository layers
 - [x] Add RabbitMQ event publishing
-- [ ] Add Fraud Detection worker (consumer service)
-- [ ] Integrate ML.NET fraud model
+- [x] Add Fraud Detection worker (consumer service)
+- [x] Integrate ML.NET fraud model
 - [ ] Dockerize full multi-service environment
 - [ ] Deploy to Azure or AWS
