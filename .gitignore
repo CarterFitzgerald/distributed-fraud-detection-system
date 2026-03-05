@@ -36,3 +36,5 @@ FraudModelTrainer/Model/*.zip
 FraudModelTrainer/Model/*.json
 FraudModelTrainer.OptionA/Model/*.zip
 FraudModelTrainer.OptionA/Model/*.json
+FraudModelTrainer/Model/*.csv
+FraudModelTrainer.OptionA/Model/*.csv
