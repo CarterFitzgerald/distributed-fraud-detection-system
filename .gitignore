@@ -34,3 +34,5 @@ TestResults/
 FraudModelTrainer/Data/creditcard.csv
 FraudModelTrainer/Model/*.zip
 FraudModelTrainer/Model/*.json
+FraudModelTrainer.OptionA/Model/*.zip
+FraudModelTrainer.OptionA/Model/*.json
