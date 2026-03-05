@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TransactionService.Data;
 
@@ -11,9 +12,11 @@ using TransactionService.Data;
 namespace TransactionService.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260304125609_AddFraudModelFeatureColumns")]
+    partial class AddFraudModelFeatureColumns
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -47,9 +50,6 @@ namespace TransactionService.Migrations
 
                     b.Property<int?>("CustomerAge")
                         .HasColumnType("int");
-
-                    b.Property<string>("CustomerHomeCountry")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CustomerId")
                         .IsRequired()
@@ -92,12 +92,6 @@ namespace TransactionService.Migrations
                     b.Property<bool?>("IsNewPaymentToken")
                         .HasColumnType("bit");
 
-                    b.Property<double?>("Latitude")
-                        .HasColumnType("float");
-
-                    b.Property<double?>("Longitude")
-                        .HasColumnType("float");
-
                     b.Property<double?>("MccRisk")
                         .HasColumnType("float");
 
@@ -106,9 +100,6 @@ namespace TransactionService.Migrations
 
                     b.Property<string>("MerchantId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("MerchantRiskTier")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("PaymentMethodAgeDays")

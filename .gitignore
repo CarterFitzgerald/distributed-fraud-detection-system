@@ -29,16 +29,3 @@ TestResults/
 
 # Local environment files
 .env
-
-# ML training data / artifacts
-FraudModelTrainer/Data/creditcard.csv
-FraudModelTrainer/Model/*.zip
-FraudModelTrainer/Model/*.json
-FraudModelTrainer.OptionA/Model/*.zip
-FraudModelTrainer.OptionA/Model/*.json
-FraudModelTrainer/Model/*.csv
-FraudModelTrainer.OptionA/Model/*.csv
-
-# ML datasets / local data
-FraudModelTrainer/Data/
-FraudModelTrainer.OptionA/Data/

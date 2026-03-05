@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TransactionService.Data;
 
@@ -11,9 +12,11 @@ using TransactionService.Data;
 namespace TransactionService.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260228094441_AddFraudModelOutputs")]
+    partial class AddFraudModelOutputs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -28,14 +31,8 @@ namespace TransactionService.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int?>("AccountAgeDays")
-                        .HasColumnType("int");
-
                     b.Property<decimal>("Amount")
                         .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("Channel")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Country")
                         .IsRequired()
@@ -45,12 +42,6 @@ namespace TransactionService.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("CustomerAge")
-                        .HasColumnType("int");
-
-                    b.Property<string>("CustomerHomeCountry")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("CustomerId")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -58,12 +49,6 @@ namespace TransactionService.Migrations
                     b.Property<string>("DeviceId")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DeviceType")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<double?>("DistanceFromHomeKm")
-                        .HasColumnType("float");
 
                     b.Property<string>("FraudModelVersion")
                         .HasColumnType("nvarchar(max)");
@@ -83,36 +68,9 @@ namespace TransactionService.Migrations
                     b.Property<DateTimeOffset?>("FraudScoredAt")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<bool?>("IsInternational")
-                        .HasColumnType("bit");
-
-                    b.Property<bool?>("IsNewDevice")
-                        .HasColumnType("bit");
-
-                    b.Property<bool?>("IsNewPaymentToken")
-                        .HasColumnType("bit");
-
-                    b.Property<double?>("Latitude")
-                        .HasColumnType("float");
-
-                    b.Property<double?>("Longitude")
-                        .HasColumnType("float");
-
-                    b.Property<double?>("MccRisk")
-                        .HasColumnType("float");
-
-                    b.Property<string>("MerchantCategory")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("MerchantId")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("MerchantRiskTier")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("PaymentMethodAgeDays")
-                        .HasColumnType("int");
 
                     b.Property<string>("PaymentMethodToken")
                         .IsRequired()
@@ -120,18 +78,6 @@ namespace TransactionService.Migrations
 
                     b.Property<DateTimeOffset>("Timestamp")
                         .HasColumnType("datetimeoffset");
-
-                    b.Property<decimal?>("TotalAmountLast24h")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("TransactionType")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("TxnCountLast1h")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("TxnCountLast24h")
-                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
