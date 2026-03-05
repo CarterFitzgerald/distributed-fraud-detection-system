@@ -38,3 +38,7 @@ FraudModelTrainer.OptionA/Model/*.zip
 FraudModelTrainer.OptionA/Model/*.json
 FraudModelTrainer/Model/*.csv
 FraudModelTrainer.OptionA/Model/*.csv
+
+# ML datasets / local data
+FraudModelTrainer/Data/
+FraudModelTrainer.OptionA/Data/
