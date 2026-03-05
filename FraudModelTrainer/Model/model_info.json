@@ -1,20 +1,18 @@
 {
-  "ModelPath": "Model/model.zip",
-  "CreatedUtc": "2026-02-28T10:03:17.7111098+00:00",
-  "Trainer": "SdcaLogisticRegression",
-  "Features": [
-    "Country (OneHot)",
-    "Currency (OneHot)",
-    "MerchantId (HashedWordBags, 2^14)",
-    "CustomerId (HashedWordBags, 2^16)",
-    "Amount (Normalized)",
-    "HourOfDay (Normalized)"
-  ],
+  "Dataset": "Kaggle creditcard.csv (Time, V1..V28, Amount, Class)",
+  "Label": "Class (1=fraud, 0=legit)",
+  "CreatedUtc": "2026-03-03T12:08:52.075875+00:00",
+  "Trainer": "FastTree (Gradient Boosted Trees)",
   "Metrics": {
-    "Accuracy": 0.9980554205153136,
-    "AreaUnderRocCurve": 0.9745494398441306,
-    "F1Score": 0,
-    "PositivePrecision": 0,
-    "PositiveRecall": 0
-  }
+    "Accuracy": 0.9995431302605915,
+    "AreaUnderRocCurve": 0.9461148684453569,
+    "AreaUnderPrecisionRecallCurve": 0.8298756785129864,
+    "F1Score": 0.8452380952380953,
+    "PositivePrecision": 0.9466666666666667,
+    "PositiveRecall": 0.7634408602150538
+  },
+  "Notes": [
+    "Fraud is highly imbalanced; PR-AUC and top-k alerting are more meaningful than accuracy.",
+    "Train/test split is stratified by label (fraud/legit split separately)."
+  ]
 }

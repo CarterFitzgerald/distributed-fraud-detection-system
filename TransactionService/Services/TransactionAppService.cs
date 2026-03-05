@@ -27,6 +27,7 @@ namespace TransactionService.Services
             // Map incoming DTO to domain entity and apply basic normalization.
             var tx = new Transaction
             {
+                Id = Guid.NewGuid(),
                 Amount = request.Amount,
                 Currency = request.Currency.ToUpperInvariant(),
                 MerchantId = request.MerchantId,
@@ -34,7 +35,17 @@ namespace TransactionService.Services
                 PaymentMethodToken = request.PaymentMethodToken,
                 DeviceId = request.DeviceId,
                 Country = request.Country.ToUpperInvariant(),
-                Timestamp = request.Timestamp ?? DateTimeOffset.UtcNow
+                Timestamp = request.Timestamp ?? DateTimeOffset.UtcNow,
+
+                Channel = request.Channel,
+                TransactionType = request.TransactionType,
+                MerchantCategory = request.MerchantCategory,
+                DeviceType = request.DeviceType,
+                CustomerHomeCountry = request.CustomerHomeCountry,
+                MerchantRiskTier = request.MerchantRiskTier,
+                Latitude = request.Latitude,
+                Longitude = request.Longitude,
+                DistanceFromHomeKm = request.DistanceFromHomeKm,
             };
 
             var saved = await _repository.AddAsync(tx);

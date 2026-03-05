@@ -6,8 +6,10 @@ using RabbitMQ.Client.Events;
 namespace FraudDetectionWorker.Messaging
 {
     /// <summary>
-    /// RabbitMQ implementation of IMessageConsumer.
-    /// Connects to a queue and invokes a callback with the message payload.
+    /// RabbitMQ message consumer that:
+    /// - declares the queue (idempotent)
+    /// - consumes messages with manual acknowledgements
+    /// - invokes a handler callback with the raw JSON payload
     /// </summary>
     public sealed class RabbitMqMessageConsumer : IMessageConsumer
     {
@@ -42,7 +44,9 @@ namespace FraudDetectionWorker.Messaging
                 arguments: null,
                 cancellationToken: ct);
 
-            await _channel.BasicQosAsync(0, 1, false, ct);
+            // Prefetch=1 ensures the consumer processes one message at a time and only receives the next
+            // after acknowledging the current one (helps with backpressure and avoids burst memory usage).
+            await _channel.BasicQosAsync(prefetchSize: 0, prefetchCount: 1, global: false, cancellationToken: ct);
 
             var consumer = new AsyncEventingBasicConsumer(_channel);
 
@@ -56,16 +60,17 @@ namespace FraudDetectionWorker.Messaging
 
                     await onMessageAsync(json, ct);
 
-                    await _channel.BasicAckAsync(ea.DeliveryTag, false, ct);
+                    // Acknowledge only after successful processing.
+                    await _channel.BasicAckAsync(deliveryTag: ea.DeliveryTag, multiple: false, cancellationToken: ct);
                 }
                 catch
                 {
-                    // requeue on error (simple + safe)
-                    await _channel.BasicNackAsync(ea.DeliveryTag, false, true, ct);
+                    // Negative-ack with requeue keeps the message durable in the presence of transient failures.
+                    await _channel.BasicNackAsync(deliveryTag: ea.DeliveryTag, multiple: false, requeue: true, cancellationToken: ct);
                 }
             };
 
-            await _channel.BasicConsumeAsync(_options.QueueName, autoAck: false, consumer, ct);
+            await _channel.BasicConsumeAsync(queue: _options.QueueName, autoAck: false, consumer: consumer, cancellationToken: ct);
         }
 
         public async Task StopAsync(CancellationToken ct)
