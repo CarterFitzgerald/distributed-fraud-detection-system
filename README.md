@@ -155,7 +155,7 @@ set ASPNETCORE_ENVIRONMENT=Development
 dotnet run
 ```
 
-## 3 Run TransactionService (Development)
+## 3 Run FraudDetectionWorker
 
 ```bash
 cd FraudDetectionWorker
