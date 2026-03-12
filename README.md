@@ -2,7 +2,7 @@
 
 ![CI Status](https://github.com/CarterFitzgerald/distributed-fraud-detection-system/actions/workflows/ci.yml/badge.svg)
 
-A production-style, event-driven fraud detection system built with **ASP.NET Core**, **RabbitMQ**, **SQL Server**, and **ML.NET**. The project is designed as a portfolio-grade example of a real-world transaction pipeline: ingest → persist → publish → consume → enrich → score → persist results.
+A production-style, event-driven fraud detection system built with **ASP.NET Core**, **RabbitMQ**, **SQL Server**, **Docker**, and **ML.NET**. The project is designed as an example of a real-world transaction pipeline: ingest → persist → publish → consume → enrich → score → persist results.
 
 ---
 
@@ -37,6 +37,7 @@ The result is a full end-to-end loop where each transaction is enriched and scor
   - Event-driven integration (Publisher/Consumer)
   - Background worker service
   - Options/config-driven infrastructure (connection strings, model path, broker settings)
+- **Infrastructure**: Docker + Docker Compose
 
 ---
 
@@ -129,37 +130,84 @@ Update transaction with fraud outputs
 - ✅ ML.NET model integration with real probability output
 - ✅ Predictions persisted back to SQL Server with versioning + timestamps
 - ✅ End-to-end pipeline verified (API → DB → event → worker → updated DB record)
+- ✅ Full distributed environment via Docker Compose
+- ✅ Automatic model generation during bootstrap
 
 ---
 
 ## Running Locally
 
-### 1 Start RabbitMQ
+## Docker Compose Environment
 
-```bash
-docker compose up -d rabbitmq
-```
-## RabbitMQ UI
+The system can run entirely in Docker using a single command.
 
-http://localhost:15672  
-**Username:** guest  
-**Password:** guest  
+### Services orchestrated by Docker Compose
+
+- SQL Server
+- RabbitMQ
+- TransactionService
+- FraudDetectionWorker
+- Bootstrap container
+
+The **bootstrap container** is responsible for:
+
+- applying database migrations
+- generating training data
+- training the ML model if it does not exist
 
 ---
 
-## 2 Run TransactionService (Development)
+## Running the System
+
+### Start the full distributed system
 
 ```bash
-cd TransactionService
-set ASPNETCORE_ENVIRONMENT=Development
-dotnet run
+docker compose up --build
+```
+This will start:
+- SQL Server
+- RabbitMQ
+- TransactionService
+- FraudDetectionWorker
+- bootstrap initialization container
+
+## Swagger API
+
+TransactionService Swagger UI:
+```
+http://localhost:5134/swagger/index.html
+```
+Example Endpoint 
+```
+POST /api/transactions
 ```
 
-## 3 Run FraudDetectionWorker
+## RabbitMQ Management UI
 
-```bash
-cd FraudDetectionWorker
-dotnet run
+```
+http://localhost:15672
+```
+Credentials
+```
+Username: guest
+Password: guest
+```
+
+## Model Training
+
+Fraud model artifacts are generated automatically during bootstrap.
+
+If the trained model does not exist, the bootstrap container will:
+- Generate synthetic transaction training data
+- Train the ML.NET fraud model
+- Save the trained model to:
+```
+FraudModelTrainer.OptionA/Model/model.zip
+```
+## Force Model retraining
+```
+rm FraudModelTrainer.OptionA/Model/model.zip
+docker compose up --build
 ```
 
 ## Development Roadmap
@@ -170,5 +218,5 @@ dotnet run
 - [x] Add RabbitMQ event publishing
 - [x] Add Fraud Detection worker (consumer service)
 - [x] Integrate ML.NET fraud model
-- [ ] Dockerize full multi-service environment
+- [x] Dockerize full multi-service environment
 - [ ] Deploy to Azure or AWS
