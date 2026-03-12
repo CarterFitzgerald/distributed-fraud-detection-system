@@ -1,4 +1,8 @@
 <Solution>
+  <Folder Name="/docker/">
+    <File Path="bootstrap.Dockerfile" />
+    <File Path="bootstrap.sh" />
+  </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".dockerignore" />
     <File Path="docker-compose.yml" />

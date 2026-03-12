@@ -1,8 +1,9 @@
-﻿using System.Text;
-using System.Text.Json;
+﻿using DistributedFraud.Contracts.Events;
+using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
-using DistributedFraud.Contracts.Events;
+using System.Text;
+using System.Text.Json;
 using TransactionService.Models;
 
 namespace TransactionService.Messaging
@@ -41,9 +42,9 @@ namespace TransactionService.Messaging
             // Create connection + channel for this publish.
             var factory = new ConnectionFactory
             {
-                HostName = _options.HostName,
+                HostName = _options.Host,
                 Port = _options.Port,
-                UserName = _options.UserName,
+                UserName = _options.Username,
                 Password = _options.Password
             };
 
