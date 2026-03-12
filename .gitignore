@@ -29,3 +29,9 @@ TestResults/
 
 # Local environment files
 .env
+
+# Generated ML training data
+FraudModelTrainer.OptionA/Data/
+
+# Generated ML models
+FraudModelTrainer.OptionA/Model/

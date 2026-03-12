@@ -27,9 +27,9 @@ namespace FraudDetectionWorker.Messaging
         {
             var factory = new ConnectionFactory
             {
-                HostName = _options.HostName,
+                HostName = _options.Host,
                 Port = _options.Port,
-                UserName = _options.UserName,
+                UserName = _options.Username,
                 Password = _options.Password
             };
 
