@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
+using RabbitMQ.Client;
 using TransactionService.Data;
-using TransactionService.Services;
 using TransactionService.Messaging;
+using TransactionService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,7 +16,13 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    options.UseSqlServer(connectionString);
+    options.UseSqlServer(connectionString, sqlOptions =>
+    {
+        sqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorNumbersToAdd: null);
+    });
 });
 
 // Application services and repositories
@@ -29,14 +37,27 @@ builder.Services.AddSingleton<ITransactionEventPublisher, RabbitMqTransactionEve
 
 var app = builder.Build();
 
+// Trust Azure Container Apps / reverse proxy forwarded headers
+var forwardedHeadersOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+
+forwardedHeadersOptions.KnownNetworks.Clear();
+forwardedHeadersOptions.KnownProxies.Clear();
+
+app.UseForwardedHeaders(forwardedHeadersOptions);
+
 // Configure the HTTP request pipeline.
+app.UseSwagger();
+app.UseSwaggerUI();
+
+// Disable HTTPS redirection in the container.
+// Azure Container Apps handles HTTPS at the ingress.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseHttpsRedirection();
 }
-
-app.UseHttpsRedirection();
 
 app.MapControllers();
 

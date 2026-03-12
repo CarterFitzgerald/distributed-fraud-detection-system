@@ -22,5 +22,21 @@ namespace TransactionService.Data
         /// Each <see cref="Transaction"/> instance corresponds to a row.
         /// </summary>
         public DbSet<Transaction> Transactions => Set<Transaction>();
+
+        /// <summary>
+        /// Configure entity mappings and database column settings.
+        /// </summary>
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Transaction>()
+                .Property(t => t.Amount)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Transaction>()
+                .Property(t => t.TotalAmountLast24h)
+                .HasPrecision(18, 2);
+        }
     }
 }
