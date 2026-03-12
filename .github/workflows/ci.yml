@@ -24,6 +24,11 @@ jobs:
         with:
           dotnet-version: "9.0.x"
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
       - name: Restore dependencies
         run: dotnet restore
 
@@ -32,6 +37,15 @@ jobs:
 
       - name: Run all tests
         run: dotnet test --no-build --configuration Release --verbosity normal
+
+      - name: Generate training data
+        run: python3 generate_training_data.py
+
+      - name: Train fraud model
+        run: dotnet run --project FraudModelTrainer.OptionA/FraudModelTrainer.OptionA.csproj
+
+      - name: Verify model artifact exists
+        run: test -f FraudModelTrainer.OptionA/Model/model.zip
 
       - name: Build TransactionService Docker image
         run: docker build -f TransactionService/Dockerfile -t transactionservice:ci .
