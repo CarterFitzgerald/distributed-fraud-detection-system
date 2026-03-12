@@ -1,33 +1,43 @@
 # Continuous Integration pipeline for the Distributed Fraud Detection System
-# This workflow restores dependencies, builds the solution,
-# and runs all unit tests on every push and pull request to main.
+# This workflow restores dependencies, builds the solution, runs all tests,
+# and validates that the service Docker images build successfully.
+# It runs on every push and pull request to the main branch.
 
 name: .NET CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
-  build:
+  build-test-and-docker:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '9.0.x'
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
 
-    - name: Restore dependencies
-      run: dotnet restore
+      - name: Restore dependencies
+        run: dotnet restore
 
-    - name: Build
-      run: dotnet build --no-restore --configuration Release
+      - name: Build solution
+        run: dotnet build --no-restore --configuration Release
 
-    - name: Run tests
-      run: dotnet test TransactionService.Tests/TransactionService.Tests.csproj --verbosity normal
+      - name: Run all tests
+        run: dotnet test --no-build --configuration Release --verbosity normal
+
+      - name: Build TransactionService Docker image
+        run: docker build -f TransactionService/Dockerfile -t transactionservice:ci .
+
+      - name: Build FraudDetectionWorker Docker image
+        run: docker build -f FraudDetectionWorker/Dockerfile -t frauddetectionworker:ci .
+
+      - name: Build bootstrap Docker image
+        run: docker build -f docker/bootstrap.Dockerfile -t bootstrap:ci .
