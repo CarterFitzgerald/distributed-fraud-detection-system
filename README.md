@@ -2,13 +2,14 @@
 
 ![CI Status](https://github.com/CarterFitzgerald/distributed-fraud-detection-system/actions/workflows/ci.yml/badge.svg)
 
-A production-style, event-driven fraud detection system built with **ASP.NET Core**, **RabbitMQ**, **SQL Server**, **Docker**, and **ML.NET**. The project is designed as an example of a real-world transaction pipeline: ingest → persist → publish → consume → enrich → score → persist results.
+A production-style, event-driven fraud detection system built with **ASP.NET Core**, **RabbitMQ**, **SQL Server**, **Docker**, and **ML.NET**. The system simulates how financial institutions process and analyze transactions in a real-world event-driven architecture, combining backend microservices, asynchronous messaging, and machine learning inference. Pipeline: API → Database → Message Queue → Worker → ML Model → Fraud Score
 
 ---
 
-## What This Project Does
+## Overview
 
-This system simulates how financial transactions flow through a distributed architecture:
+This project demonstrates how a modern financial fraud detection pipeline can be implemented using event-driven microservices and machine learning scoring.
+The system processes transactions through several stages:
 
 1. **TransactionService** exposes a REST API to create transactions.
 2. Transactions are **persisted to SQL Server** via Entity Framework Core.
@@ -25,6 +26,46 @@ The result is a full end-to-end loop where each transaction is enriched and scor
 
 ---
 
+## Architecture
+
+High-level system architecture:
+```
+                        +--------------------+
+                        |  Transaction API   |
+                        |  (ASP.NET Core)    |
+                        +----------+---------+
+                                   |
+                                   v
+                        +--------------------+
+                        |     SQL Server     |
+                        |   Transactions DB  |
+                        +----------+---------+
+                                   |
+                                   v
+                        +--------------------+
+                        |      RabbitMQ      |
+                        |  Event Messaging   |
+                        +----------+---------+
+                                   |
+                                   v
+                    +-----------------------------+
+                    |     FraudDetectionWorker    |
+                    |  Feature Engineering + ML   |
+                    +-------------+---------------+
+                                  |
+                                  v
+                        +--------------------+
+                        |    ML.NET Model    |
+                        |  Fraud Prediction  |
+                        +----------+---------+
+                                   |
+                                   v
+                        +--------------------+
+                        |  Updated Transaction|
+                        |  Fraud Metadata     |
+                        +--------------------+
+```
+
 ## Tech Stack
 
 - **Language**: C# (.NET)
@@ -38,6 +79,10 @@ The result is a full end-to-end loop where each transaction is enriched and scor
   - Background worker service
   - Options/config-driven infrastructure (connection strings, model path, broker settings)
 - **Infrastructure**: Docker + Docker Compose
+- **Cloud Deployment**
+  - Azure Container Apps
+  - Azure SQL
+- **CI/CD**: GitHub Actions
 
 ---
 
@@ -135,6 +180,12 @@ Update transaction with fraud outputs
 
 ---
 
+## Running Online
+The project can be viewed at 
+```
+https://transactionservice.mangograss-ebbd0554.australiasoutheast.azurecontainerapps.io/swagger/index.html
+```
+
 ## Running Locally
 
 ## Docker Compose Environment
@@ -210,6 +261,16 @@ rm FraudModelTrainer.OptionA/Model/model.zip
 docker compose up --build
 ```
 
+## CI Pipeline
+GitHub Actions automatically performs:
+- dependency restoration
+- solution build
+- unit tests
+- ML model generation
+- Docker image validation
+This ensures the system remains fully reproducible and buildable in CI environments.
+
+
 ## Development Roadmap
 
 - [x] Implement Transaction domain model
@@ -219,4 +280,22 @@ docker compose up --build
 - [x] Add Fraud Detection worker (consumer service)
 - [x] Integrate ML.NET fraud model
 - [x] Dockerize full multi-service environment
-- [ ] Deploy to Azure or AWS
+- [x] Deploy to Azure or AWS
+
+Future Improvements:
+- [ ] Additional POST/GET APIs for better system Demonstration
+
+## License
+MIT Licence
+
+## Author
+Carter Fitzgerald
+Software Engineering — AI Systems & Backend Development
+
+GitHub:
+https://github.com/CarterFitzgerald
+
+
+
+
+
