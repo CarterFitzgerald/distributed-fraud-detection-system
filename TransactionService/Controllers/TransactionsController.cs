@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System.Text;
 using TransactionService.Models;
 using TransactionService.Services;
 
@@ -14,9 +15,6 @@ namespace TransactionService.Controllers
     {
         private readonly ITransactionService _transactionService;
 
-        /// <summary>
-        /// Constructor with dependency injection of the transaction service.
-        /// </summary>
         public TransactionsController(ITransactionService transactionService)
         {
             _transactionService = transactionService;
@@ -29,9 +27,7 @@ namespace TransactionService.Controllers
         [HttpPost]
         public async Task<ActionResult<TransactionResponse>> Create([FromBody] CreateTransactionRequest request)
         {
-            // Model validation is handled automatically by [ApiController] + data annotations.
             var created = await _transactionService.CreateAsync(request);
-
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
@@ -42,12 +38,119 @@ namespace TransactionService.Controllers
         public async Task<ActionResult<TransactionResponse>> GetById(Guid id)
         {
             var result = await _transactionService.GetByIdAsync(id);
-            if (result is null)
+            if (result is null) return NotFound();
+            return Ok(result);
+        }
+
+        // -----------------------------------------------------------------------
+        // Simulation endpoints
+        // -----------------------------------------------------------------------
+
+        /// <summary>
+        /// Runs a transaction simulation by generating and submitting randomised
+        /// transactions through the full pipeline (API → DB → RabbitMQ → Worker → ML scoring).
+        ///
+        /// Transactions are submitted with a small delay between each to simulate
+        /// realistic traffic rather than a bulk insert. Fraud scoring is asynchronous —
+        /// poll GET /api/transactions/simulation/report after the estimated scoring time.
+        /// </summary>
+        /// <param name="count">Number of transactions to generate. Default 1000, max 2000.</param>
+        /// <param name="delayMs">Milliseconds between each submission. Default 20ms.</param>
+        [HttpPost("simulate")]
+        public async Task<ActionResult<SimulationRunResult>> RunSimulation(
+            [FromQuery] int count = 1000,
+            [FromQuery] int delayMs = 20)
+        {
+            if (count < 1 || count > 2000)
+                return BadRequest("Count must be between 1 and 2000.");
+
+            if (delayMs < 0 || delayMs > 1000)
+                return BadRequest("DelayMs must be between 0 and 1000.");
+
+            var result = await _transactionService.RunSimulationAsync(count, delayMs);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Returns a summary fraud detection report across all transactions in the database.
+        ///
+        /// Includes total submitted, scored, fraud count, fraud rate, average fraud probability,
+        /// and a breakdown by merchant category.
+        ///
+        /// Run POST /api/transactions/simulate first, then wait for the worker to score
+        /// the transactions (see estimatedScoringSeconds in the simulate response).
+        /// </summary>
+        [HttpGet("simulation/report")]
+        public async Task<ActionResult<SimulationReport>> GetSimulationReport()
+        {
+            var report = await _transactionService.GetSimulationReportAsync();
+            return Ok(report);
+        }
+
+        /// <summary>
+        /// Downloads a CSV file containing all scored transactions with key fraud fields.
+        /// Useful for offline analysis and portfolio demonstration.
+        /// </summary>
+        [HttpGet("simulation/report/csv")]
+        public async Task<IActionResult> DownloadSimulationCsv()
+        {
+            var transactions = (await _transactionService.GetAllScoredAsync()).ToList();
+
+            if (!transactions.Any())
+                return NotFound("No scored transactions found. Run a simulation first.");
+
+            var csv = BuildCsv(transactions);
+            var bytes = Encoding.UTF8.GetBytes(csv);
+            var filename = $"fraud_simulation_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv";
+
+            return File(bytes, "text/csv", filename);
+        }
+
+        // -----------------------------------------------------------------------
+        // CSV builder
+        // -----------------------------------------------------------------------
+
+        private static string BuildCsv(IEnumerable<Transaction> transactions)
+        {
+            var sb = new StringBuilder();
+
+            // Header
+            sb.AppendLine(
+                "TransactionId,Timestamp,Amount,Currency,Country,MerchantId,CustomerId," +
+                "MerchantCategory,Channel,TransactionType,DeviceType," +
+                "IsInternational,IsNewDevice,IsNewPaymentToken," +
+                "DistanceFromHomeKm,MccRisk," +
+                "FraudPrediction,FraudProbability,FraudScore,FraudReason,FraudModelVersion,FraudScoredAt");
+
+            foreach (var t in transactions)
             {
-                return NotFound();
+                sb.AppendLine(string.Join(",",
+                    t.Id,
+                    t.Timestamp.ToString("o"),
+                    t.Amount,
+                    t.Currency,
+                    t.Country,
+                    t.MerchantId,
+                    t.CustomerId,
+                    t.MerchantCategory ?? "",
+                    t.Channel ?? "",
+                    t.TransactionType ?? "",
+                    t.DeviceType ?? "",
+                    t.IsInternational?.ToString() ?? "",
+                    t.IsNewDevice?.ToString() ?? "",
+                    t.IsNewPaymentToken?.ToString() ?? "",
+                    t.DistanceFromHomeKm?.ToString("F2") ?? "",
+                    t.MccRisk?.ToString("F4") ?? "",
+                    t.FraudPrediction?.ToString() ?? "",
+                    t.FraudProbability?.ToString("F4") ?? "",
+                    t.FraudScore?.ToString() ?? "",
+                    $"\"{t.FraudReason?.Replace("\"", "'") ?? ""}\"",
+                    t.FraudModelVersion ?? "",
+                    t.FraudScoredAt?.ToString("o") ?? ""
+                ));
             }
 
-            return Ok(result);
+            return sb.ToString();
         }
     }
 }
