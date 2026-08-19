@@ -1,20 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TransactionService.Data;
 using TransactionService.Models;
-
 namespace TransactionService.Services
 {
-    /// <summary>
-    /// Entity Framework Core implementation of <see cref="ITransactionRepository"/>.
-    /// Uses <see cref="AppDbContext"/> to interact with the SQL Server database.
-    /// </summary>
     public class EfTransactionRepository : ITransactionRepository
     {
         private readonly AppDbContext _db;
 
-        /// <summary>
-        /// Constructor with dependency injection of the database context.
-        /// </summary>
         public EfTransactionRepository(AppDbContext db)
         {
             _db = db;
@@ -32,6 +24,12 @@ namespace TransactionService.Services
         public Task<Transaction?> GetByIdAsync(Guid id)
         {
             return _db.Transactions.FirstOrDefaultAsync(t => t.Id == id);
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<Transaction>> GetAllAsync()
+        {
+            return await _db.Transactions.ToListAsync();
         }
     }
 }
