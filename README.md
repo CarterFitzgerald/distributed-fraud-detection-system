@@ -180,12 +180,6 @@ Update transaction with fraud outputs
 
 ---
 
-## Running Online
-The project can be viewed at 
-```
-https://transactionservice.mangograss-ebbd0554.australiasoutheast.azurecontainerapps.io/swagger/index.html
-```
-
 ## Running Locally
 
 ## Docker Compose Environment
