@@ -108,43 +108,35 @@ namespace TransactionService.Simulation
         ///   ~10% — international fraud
         ///   ~10% — high-risk merchant + new token
         /// </summary>
-        public static IEnumerable<CreateTransactionRequest> GenerateBatch(int count)
+        public static IEnumerable<SimulatedTransaction> GenerateBatch(int count)
         {
-            var transactions = new List<CreateTransactionRequest>(count);
+            var transactions = new List<SimulatedTransaction>(count);
 
-            // Phase 1: Build normal history for all customers (~40% of batch)
-            // This is critical — the worker must see each customer's normal
-            // devices and tokens before fraud transactions are introduced,
-            // otherwise IsNewDevice/IsNewToken can't trigger correctly.
             var historyCount = (int)(count * 0.40);
             for (var i = 0; i < historyCount; i++)
             {
                 var customer = Customers[i % Customers.Length];
-                transactions.Add(BuildNormalTransaction(customer));
+                transactions.Add(new SimulatedTransaction(BuildNormalTransaction(customer), false, "NORMAL"));
             }
 
-            // Phase 2: Mix of normal and fraud transactions (~60% of batch)
             var remaining = count - historyCount;
             for (var i = 0; i < remaining; i++)
             {
                 var customer = Customers[_rng.Next(Customers.Length)];
-
                 var roll = _rng.NextDouble();
 
                 var tx = roll switch
                 {
-                    < 0.50 => BuildNormalTransaction(customer),         // 50% normal
-                    < 0.625 => BuildNewDeviceFraud(customer),           // 12.5% new device
-                    < 0.75 => BuildCardTestingBurst(customer),          // 12.5% velocity
-                    < 0.875 => BuildInternationalFraud(customer),       // 12.5% international
-                    _ => BuildHighRiskMerchantFraud(customer),          // 12.5% high-risk merchant
+                    < 0.97 => new SimulatedTransaction(BuildNormalTransaction(customer), false, "NORMAL"),      // 97%
+                    < 0.9775 => new SimulatedTransaction(BuildNewDeviceFraud(customer), true, "NEW_DEVICE_FRAUD"),      // 0.75%
+                    < 0.985 => new SimulatedTransaction(BuildCardTestingBurst(customer), true, "CARD_TESTING"),         // 0.75%
+                    < 0.9925 => new SimulatedTransaction(BuildInternationalFraud(customer), true, "INTERNATIONAL_FRAUD"), // 0.75%
+                    _ => new SimulatedTransaction(BuildHighRiskMerchantFraud(customer), true, "HIGH_RISK_MERCHANT"),      // 0.75%
                 };
 
                 transactions.Add(tx);
             }
 
-            // Shuffle phase 2 portion to interleave fraud with normal traffic
-            // (Keep phase 1 history at the front — order matters for state building)
             var phase2 = transactions.Skip(historyCount).OrderBy(_ => _rng.Next()).ToList();
             return transactions.Take(historyCount).Concat(phase2);
         }

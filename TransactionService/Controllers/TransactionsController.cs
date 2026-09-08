@@ -106,6 +106,19 @@ namespace TransactionService.Controllers
             return File(bytes, "text/csv", filename);
         }
 
+        /// <summary>
+        /// Compares the model's predictions against the ground-truth labels the
+        /// simulator assigned during the most recent run — i.e. did the model
+        /// actually catch the injected fraud scenarios, and did it wrongly flag
+        /// normal transactions? Only meaningful after POST /api/transactions/simulate.
+        /// </summary>
+        [HttpGet("simulation/accuracy")]
+        public async Task<ActionResult<SimulationAccuracyReport>> GetSimulationAccuracy()
+        {
+            var report = await _transactionService.GetSimulationAccuracyAsync();
+            return Ok(report);
+        }
+
         // -----------------------------------------------------------------------
         // CSV builder
         // -----------------------------------------------------------------------

@@ -11,13 +11,17 @@ namespace TransactionService.Services
     {
         private readonly ITransactionRepository _repository;
         private readonly ITransactionEventPublisher _eventPublisher;
+        private readonly ISimulationGroundTruthStore _groundTruthStore;
+
 
         public TransactionAppService(
             ITransactionRepository repository,
-            ITransactionEventPublisher eventPublisher)
+            ITransactionEventPublisher eventPublisher,
+            ISimulationGroundTruthStore groundTruthStore)
         {
             _repository = repository;
             _eventPublisher = eventPublisher;
+            _groundTruthStore = groundTruthStore;
         }
 
         /// <inheritdoc />
@@ -61,14 +65,15 @@ namespace TransactionService.Services
         /// <inheritdoc />
         public async Task<SimulationRunResult> RunSimulationAsync(int count, int delayMs = 20)
         {
-            // Cap at 2000 to prevent accidental overload
             count = Math.Clamp(count, 1, 2000);
+            _groundTruthStore.Reset();
 
             var ids = new List<Guid>(count);
 
-            foreach (var request in TransactionSimulator.GenerateBatch(count))
+            foreach (var simulated in TransactionSimulator.GenerateBatch(count))
             {
-                var response = await CreateAsync(request);
+                var response = await CreateAsync(simulated.Request);
+                _groundTruthStore.Record(response.Id, simulated.ExpectedFraud, simulated.Scenario);
                 ids.Add(response.Id);
 
                 if (delayMs > 0)
@@ -79,10 +84,71 @@ namespace TransactionService.Services
             {
                 Submitted = ids.Count,
                 TransactionIds = ids,
-                // Rough estimate: worker processes ~50 txns/sec
                 EstimatedScoringSeconds = Math.Max(5, count / 50),
                 ReportUrl = "/api/transactions/simulation/report"
             };
+        }
+
+        public async Task<SimulationAccuracyReport> GetSimulationAccuracyAsync()
+        {
+            var groundTruth = _groundTruthStore.Snapshot();
+            var all = (await _repository.GetAllAsync()).ToList();
+
+            var relevant = all.Where(t => groundTruth.ContainsKey(t.Id)).ToList();
+            var scored = relevant.Where(t => t.FraudScoredAt.HasValue).ToList();
+
+            int tp = 0, fp = 0, tn = 0, fn = 0;
+            var scenarioStats = new Dictionary<string, (int Total, int Correct)>();
+
+            foreach (var tx in scored)
+            {
+                var (expectedFraud, scenario) = groundTruth[tx.Id];
+                var predictedFraud = tx.FraudPrediction == true;
+
+                if (expectedFraud && predictedFraud) tp++;
+                else if (!expectedFraud && predictedFraud) fp++;
+                else if (!expectedFraud && !predictedFraud) tn++;
+                else fn++;
+
+                var correct = predictedFraud == expectedFraud;
+                scenarioStats.TryGetValue(scenario, out var stats);
+                scenarioStats[scenario] = (stats.Total + 1, stats.Correct + (correct ? 1 : 0));
+            }
+
+            var evaluated = scored.Count;
+            var accuracy = evaluated > 0 ? (tp + tn) / (double)evaluated : 0;
+            var precision = (tp + fp) > 0 ? tp / (double)(tp + fp) : 0;
+            var recall = (tp + fn) > 0 ? tp / (double)(tp + fn) : 0;
+            var f1 = (precision + recall) > 0 ? 2 * precision * recall / (precision + recall) : 0;
+
+            var report = new SimulationAccuracyReport
+            {
+                Evaluated = evaluated,
+                PendingScoring = relevant.Count - evaluated,
+                TruePositives = tp,
+                FalsePositives = fp,
+                TrueNegatives = tn,
+                FalseNegatives = fn,
+                Accuracy = Math.Round(accuracy * 100, 2),
+                Precision = Math.Round(precision * 100, 2),
+                Recall = Math.Round(recall * 100, 2),
+                F1Score = Math.Round(f1 * 100, 2),
+                GeneratedAt = DateTimeOffset.UtcNow
+            };
+
+            foreach (var (scenario, stats) in scenarioStats)
+            {
+                report.ByScenario[scenario] = new ScenarioAccuracy
+                {
+                    Total = stats.Total,
+                    CorrectlyDetected = stats.Correct,
+                    DetectionRatePercent = stats.Total > 0
+                        ? Math.Round(stats.Correct / (double)stats.Total * 100, 2)
+                        : 0
+                };
+            }
+
+            return report;
         }
 
         /// <inheritdoc />

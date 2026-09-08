@@ -4,6 +4,7 @@ using RabbitMQ.Client;
 using TransactionService.Data;
 using TransactionService.Messaging;
 using TransactionService.Services;
+using TransactionService.Simulation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +29,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Application services and repositories
 builder.Services.AddScoped<ITransactionRepository, EfTransactionRepository>();
 builder.Services.AddScoped<ITransactionService, TransactionAppService>();
+builder.Services.AddSingleton<ISimulationGroundTruthStore, SimulationGroundTruthStore>();
 
 // Bind RabbitMQ options from configuration.
 builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection("RabbitMq"));

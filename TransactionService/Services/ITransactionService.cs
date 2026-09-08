@@ -37,5 +37,11 @@ namespace TransactionService.Services
         /// Returns all scored transactions as a flat list for CSV export.
         /// </summary>
         Task<IEnumerable<Transaction>> GetAllScoredAsync();
+
+        /// <summary>
+        /// Compares the model's predictions against the ground-truth labels the
+        /// simulator assigned during the most recent simulation run.
+        /// </summary>
+        Task<SimulationAccuracyReport> GetSimulationAccuracyAsync();
     }
 }

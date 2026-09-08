@@ -1,0 +1,17 @@
+  feat/docker-compose-local-environment[m
+  feat/test-ci-upgrade[m
+  feature/add-efcore-sql-persistence[m
+  feature/add-fraud-worker[m
+  feature/add-rabbitmq-publishing[m
+  feature/add-transaction-domain[m
+  feature/add-transaction-service-layer[m
+  feature/add-transaction-tests[m
+  feature/azure-deployment[m
+  feature/cleanup-template-and-add-health[m
+  feature/dockerize-transaction-service[m
+  feature/fix-ci-model-generation[m
+  feature/fraud-scoring-and-persistence[m
+  feature/ml-net-integration[m
+  feature/refactor-contracts-and-messaging[m
+* [32mfeature/simulation-endpoints[m
+  main[m
